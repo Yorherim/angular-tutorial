@@ -1,0 +1,2 @@
+<p *ngIf="!editMode" class="title" (dblclick)="enableEditMode()">{{ value }}</p>
+<input *ngIf="editMode" [(ngModel)]="value" (blur)="disableEditMode()" autofocus #input />
