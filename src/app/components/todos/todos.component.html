@@ -1,10 +1,14 @@
-<div *ngFor="let todo of todos" class="todo">
-  <inst-changeable-title
-    [title]="todo.title"
-    (newTitleEvent)="updateTodoTitle(todo.id, $event)"
-  ></inst-changeable-title>
-  <button (click)="deleteTodo(todo.id)" class="todo-button">X</button>
-</div>
+<div *ngIf="error; else content">{{ error }}</div>
 
-<input type="text" [(ngModel)]="inputValue" />
-<button (click)="createTodo()">create todo</button>
+<ng-template #content>
+  <div *ngFor="let todo of todos" class="todo">
+    <inst-changeable-title
+      [title]="todo.title"
+      (newTitleEvent)="updateTodoTitle(todo.id, $event)"
+    ></inst-changeable-title>
+    <button (click)="deleteTodo(todo.id)" class="todo-button">X</button>
+  </div>
+
+  <input type="text" [(ngModel)]="inputValue" />
+  <button (click)="createTodo()">create todo</button>
+</ng-template>

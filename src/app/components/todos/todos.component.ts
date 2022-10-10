@@ -1,77 +1,72 @@
 import { HttpClient } from '@angular/common/http';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Subscription } from 'rxjs';
+import { HttpTodosService } from 'src/app/services/http-todos.service';
 import { BaseResponse, Todolist } from './types';
-
-const httpOptions = {
-  withCredentials: true,
-  headers: {
-    'API-KEY': '58a993db-1dec-4e5e-aeb2-a54bfae69c2c',
-  },
-};
 
 @Component({
   selector: 'inst-todos',
   templateUrl: './todos.component.html',
   styleUrls: ['./todos.component.scss'],
 })
-export class TodosComponent implements OnInit {
+export class TodosComponent implements OnInit, OnDestroy {
   todos: Todolist[] = [];
-  inputValue = '';
+  inputValue: string = '';
+  error: string = '';
+  subscription: Subscription = new Subscription();
 
-  constructor(private http: HttpClient) {}
+  constructor(private httpTodosService: HttpTodosService) {}
 
   ngOnInit(): void {
     this.getTodos();
   }
 
+  ngOnDestroy(): void {
+    this.subscription.unsubscribe();
+  }
+
   getTodos() {
-    this.http
-      .get<Todolist[]>('https://social-network.samuraijs.com/api/1.1//todo-lists', httpOptions)
-      .subscribe((res: Todolist[]) => (this.todos = res));
+    this.subscription.add(
+      this.httpTodosService.getTodos().subscribe({
+        next: (res: Todolist[]) => (this.todos = res),
+        error: (error) => {
+          this.error = error.message;
+          setTimeout(() => (this.error = ''), 5000);
+        },
+      }),
+    );
   }
 
   createTodo() {
-    this.http
-      .post<BaseResponse<{ item: Todolist }>>(
-        'https://social-network.samuraijs.com/api/1.1//todo-lists',
-        { title: this.inputValue },
-        httpOptions,
-      )
-      .subscribe((res) => {
+    this.subscription.add(
+      this.httpTodosService.createTodo(this.inputValue).subscribe((res) => {
         this.todos.unshift(res.data.item);
         this.inputValue = '';
-
-        console.log('todo created');
-      });
+      }),
+    );
   }
 
   deleteTodo(todolistId: string) {
-    this.http
-      .delete<BaseResponse>(
-        `https://social-network.samuraijs.com/api/1.1//todo-lists/${todolistId}`,
-        httpOptions,
-      )
-      .subscribe(() => {
+    this.subscription.add(
+      this.httpTodosService.deleteTodo(todolistId).subscribe(() => {
         this.todos = this.todos.filter((todo) => {
           return todo.id !== todolistId;
         });
-
-        console.log('todo deleted');
-      });
+      }),
+    );
   }
 
   updateTodoTitle(todolistId: string, newTitle: string) {
-    this.http
-      .put<BaseResponse>(
-        `https://social-network.samuraijs.com/api/1.1//todo-lists/${todolistId}`,
-        { title: newTitle },
-        httpOptions,
-      )
-      .subscribe(() => {
-        const updatedTodo = this.todos.find((todo) => todo.id === todolistId);
-        if (updatedTodo) updatedTodo.title = newTitle;
-
-        console.log('todo updated');
-      });
+    this.subscription.add(
+      this.httpTodosService.updateTodoTitle(todolistId, newTitle).subscribe({
+        next: () => {
+          const updatedTodo = this.todos.find((todo) => todo.id === todolistId);
+          if (updatedTodo) updatedTodo.title = newTitle;
+        },
+        error: (error) => {
+          this.error = error;
+        },
+      }),
+    );
   }
 }
